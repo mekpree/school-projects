@@ -1,0 +1,267 @@
+#include "inc/hw_memmap.h"
+#include "grlib.h"
+#include "Sharp96x96.h"
+#include "HAL_MSP_EXP430FR5969_Sharp96x96.h"
+#include "images.h"
+#include "driverlib.h"
+#include "stdint.h"
+
+void clockInit(void);
+void boardInit();
+void timerInit();
+void Delay(void);
+void playAnimation(void);
+
+tContext g_sContext;
+uint8_t g_delayCounter = 0;
+
+#define BUTTON_PORT GPIO_PORT_P1
+#define BUTTON_PIN  GPIO_PIN7  
+
+
+
+uint8_t buttonPressed(void)
+{
+    return (GPIO_getInputPinValue(BUTTON_PORT, BUTTON_PIN) == 0);
+}
+
+uint8_t buttonNewPress(void)
+{
+    static uint8_t released = 1;
+    uint8_t now = buttonPressed();
+
+    if (released && now == 0)
+    {
+        released = 0;
+        return 1; 
+    }
+
+    if (now == 1)
+        released = 1; 
+
+    return 0;
+}
+
+uint8_t delayWithCancel(uint32_t cycles)
+{
+    while (cycles > 0)
+    {
+        __delay_cycles(5000);
+
+        if (buttonNewPress()) 
+            return 1;
+
+        cycles -= 5000;
+    }
+    return 0;
+}
+
+
+void main(void)
+{
+    boardInit();
+    clockInit();
+    timerInit();
+
+    HAL_LCD_initDisplay();
+
+    PM5CTL0 &= ~LOCKLPM5;
+    __enable_interrupt();
+
+    GrContextInit(&g_sContext, &g_sharp96x96LCD);
+    GrContextForegroundSet(&g_sContext, ClrBlack);
+    GrContextBackgroundSet(&g_sContext, ClrWhite);
+    GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
+    GrClearDisplay(&g_sContext);
+    GrFlush(&g_sContext);
+
+    GPIO_setAsInputPinWithPullUpResistor(BUTTON_PORT, BUTTON_PIN);
+
+    while (1)
+    {
+        GrClearDisplay(&g_sContext);
+        GrStringDraw(&g_sContext, "Press Button", -1, 20, 40, 1);
+        GrFlush(&g_sContext);
+
+        while (!buttonPressed());
+        __delay_cycles(50000); 
+        while (buttonPressed()); 
+
+        playAnimation(); 
+    }
+}
+
+
+void playAnimation(void)
+{
+    while (1) 
+    {
+        __delay_cycles(22000000);
+        // ---------------- Frame 1 ----------------
+        GrImageDraw(&g_sContext, &Frame11BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(120000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 2 ----------------
+        GrImageDraw(&g_sContext, &Frame21BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(35000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 3 ----------------
+        GrImageDraw(&g_sContext, &Frame31BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(48000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 4 ----------------
+        GrImageDraw(&g_sContext, &Frame41BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(38000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 5 ----------------
+        GrImageDraw(&g_sContext, &Frame51BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(18000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 6 ----------------
+        GrImageDraw(&g_sContext, &Frame61BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(12000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 7 ----------------
+        GrImageDraw(&g_sContext, &Frame71BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(10000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 8 ----------------
+        GrImageDraw(&g_sContext, &Frame81BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(12000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 9 ----------------
+        GrImageDraw(&g_sContext, &Frame91BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(20000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 10 ----------------
+        GrImageDraw(&g_sContext, &Frame101BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(13000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 11 ----------------
+        GrImageDraw(&g_sContext, &Frame111BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(13000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 12 ----------------
+        GrImageDraw(&g_sContext, &Frame121BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(13000000)) break;
+        GrClearDisplay(&g_sContext);
+
+        // ---------------- Frame 13 ----------------
+        GrImageDraw(&g_sContext, &Frame131BPP_UNCOMP, 0, 0);
+        GrFlush(&g_sContext);
+        if (delayWithCancel(1300000)) break;
+        GrClearDisplay(&g_sContext);
+    }
+}
+
+
+void clockInit(void)
+{
+    CS_setDCOFreq(CS_DCORSEL_1, CS_DCOFSEL_3);
+    CS_initClockSignal(CS_ACLK, CS_VLOCLK_SELECT, CS_CLOCK_DIVIDER_1);
+    CS_initClockSignal(CS_SMCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
+    CS_initClockSignal(CS_MCLK, CS_DCOCLK_SELECT, CS_CLOCK_DIVIDER_1);
+}
+
+void boardInit()
+{
+    GPIO_setAsOutputPin(GPIO_PORT_PA, 0xFFFF);
+    GPIO_setAsOutputPin(GPIO_PORT_PB, 0xFFFF);
+    GPIO_setOutputLowOnPin(GPIO_PORT_PA, 0xFFFF);
+    GPIO_setOutputLowOnPin(GPIO_PORT_PB, 0xFFFF);
+}
+
+void timerInit()
+{
+    Timer_A_initUpModeParam param = {0};
+    param.clockSource = TIMER_A_CLOCKSOURCE_SMCLK;
+    param.clockSourceDivider = TIMER_A_CLOCKSOURCE_DIVIDER_64;
+    param.timerPeriod = 65535 - 1;
+    param.timerInterruptEnable_TAIE = TIMER_A_TAIE_INTERRUPT_ENABLE;
+    param.captureCompareInterruptEnable_CCR0_CCIE = TIMER_A_CCIE_CCR0_INTERRUPT_ENABLE;
+    param.timerClear = TIMER_A_SKIP_CLEAR;
+    param.startTimer = false;
+    Timer_A_initUpMode(TIMER_A1_BASE, &param);
+
+    Timer_A_initCompareModeParam initComp1Param = {0};
+    initComp1Param.compareRegister = TIMER_A_CAPTURECOMPARE_REGISTER_1;
+    initComp1Param.compareInterruptEnable = TIMER_A_CAPTURECOMPARE_INTERRUPT_DISABLE;
+    initComp1Param.compareOutputMode = TIMER_A_OUTPUTMODE_OUTBITVALUE;
+    initComp1Param.compareValue = 62500;
+    Timer_A_initCompareMode(TIMER_A1_BASE, &initComp1Param);
+
+    Timer_A_startCounter(TIMER_A1_BASE, TIMER_A_UP_MODE);
+}
+
+void Delay(void)
+{
+    g_delayCounter = 0;
+    Timer_A_enableCaptureCompareInterrupt(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+
+    Timer_A_clear(TIMER_A1_BASE);
+    __bis_SR_register(LPM0_bits + GIE);
+
+    Timer_A_disableCaptureCompareInterrupt(TIMER_A1_BASE, TIMER_A_CAPTURECOMPARE_REGISTER_1);
+}
+
+#pragma vector = TIMER1_A0_VECTOR
+__interrupt void TIMER1_A0_ISR(void)
+{
+    Sharp96x96_SendToggleVCOMCommand();
+
+    Timer_A_setCompareValue(TIMER_A1_BASE,
+                            TIMER_A_CAPTURECOMPARE_REGISTER_0,
+                            Timer_A_getCaptureCompareCount(
+                                TIMER_A1_BASE,
+                                TIMER_A_CAPTURECOMPARE_REGISTER_0) +
+                                (65535 - 1));
+
+    Timer_A_clearCaptureCompareInterrupt(TIMER_A1_BASE,
+                                         TIMER_A_CAPTURECOMPARE_REGISTER_0);
+
+    Timer_A_clearTimerInterrupt(TIMER_A1_BASE);
+}
+
+#pragma vector = TIMER1_A1_VECTOR
+__interrupt void TIMER1_A1_ISR(void)
+{
+    g_delayCounter++;
+
+    Timer_A_setCompareValue(TIMER_A1_BASE,
+                            TIMER_A_CAPTURECOMPARE_REGISTER_1,
+                            Timer_A_getCaptureCompareCount(
+                                TIMER_A1_BASE,
+                                TIMER_A_CAPTURECOMPARE_REGISTER_1) + 62500);
+
+    if (g_delayCounter == 10)
+    {
+        __bic_SR_register_on_exit(LPM0_bits);
+    }
+
+    Timer_A_clearCaptureCompareInterrupt(TIMER_A1_BASE,
+                                         TIMER_A_CAPTURECOMPARE_REGISTER_1);
+    Timer_A_clearTimerInterrupt(TIMER_A1_BASE);
+}
